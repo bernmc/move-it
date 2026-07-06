@@ -1,103 +1,103 @@
 # Move It!
 
-**A tiny, free Windows app that nudges you to get up and move — and it installs
-*nothing*, so it runs even on a locked-down work PC.**
+**A tiny, free reminder that nudges you to get up and move — for Windows *and* Mac.**
 
-Sit at a desk all day? Move It! lives quietly down by your clock and every so often
-pops up a funky reminder to stand up and stretch. You click **I MOVED!**, it counts it,
-and the cycle starts again. No installer, no admin rights, no accounts, no internet.
-It's just a couple of text files that run on the bits already built into Windows.
+Sit at a desk all day? Move It! waits quietly in the background and every so often pops a
+funky reminder to stand up and stretch. You click **I MOVED!**, it counts it, and the
+cycle starts again. No accounts, no subscriptions, no internet — your data never leaves
+your computer.
 
-## Why it works when nothing else will install
+There are two versions. **Pick yours below.**
 
-Locked-down work computer? No permission to install programs? That's exactly what this
-is for. Move It! uses **only** PowerShell and .NET — both of which already come inside
-every copy of Windows. Nothing is downloaded, nothing is installed, and it never touches
-the internet. To remove it, you just delete the folder.
+- 🪟 **[Windows](#-windows)** — installs *nothing at all*, so it even runs on a
+  locked-down work PC with no admin rights.
+- 🍎 **[Mac](#-mac)** — a little menu-bar app.
 
-## Getting it (about 2 minutes)
+---
 
-1. Go to the **[Releases page](../../releases/latest)** and download **MoveIt.zip**.
-2. **Right-click the downloaded zip → Extract All…** to unpack it. Put the `MoveIt`
-   folder anywhere you like — your **Documents** or **Desktop** is perfect.
+## 🪟 Windows
+
+Runs on 100% stock Windows — no installer, no admin rights, no Python/Java/anything. It's
+just a few text files that use the PowerShell and .NET already built into Windows.
+
+**Getting it (about 2 minutes):**
+
+1. Go to the **[Releases page](../../releases/latest)** and download **MoveIt-Windows.zip**.
+2. **Right-click the zip → Extract All…**, and put the `MoveIt` folder anywhere — your
+   **Documents** or **Desktop** is perfect.
 3. Open the folder and **double-click `Start-MoveIt.bat`**.
-4. A little **teal circle** appears down near the clock (the system tray). That's it
-   running! If you can't see it, click the small **^** arrow by the clock to reveal
-   hidden icons.
+4. A little **teal circle** appears down near the clock. That's it running! Can't see it?
+   Click the small **^** arrow by the clock to reveal hidden icons.
 
-That's the whole install. Really.
+> If Windows shows a blue **"Windows protected your PC"** box, that's normal for anything
+> not from the Microsoft Store — click **More info → Run anyway** (once).
 
-> **If Windows shows a blue "Windows protected your PC" box:** that's normal for any app
-> that isn't from the Microsoft Store. Click **More info → Run anyway**. You only do this
-> once. (See [Troubleshooting](#if-it-wont-start) if the `.bat` is blocked entirely.)
+**Using it:** when the reminder pops up, click **I MOVED!** (counts it, restarts the
+timer) or **Gimme X min** (snooze). **Right-click the teal icon** for the menu — *Move
+now, Snooze, Pause/Resume, Settings, Quit*. Settings let you change the interval (default
+45 min), snooze time, chime, and start-at-login.
 
-## Using it day to day
+**If the `.bat` is blocked** on a very locked-down PC: right-click **`MoveIt.ps1` → Run
+with PowerShell** instead, or use the backup **`MoveIt.hta`** (double-click it — same job,
+runs as a small window). Full details are in the `README.txt` inside the folder and in
+[windows/](windows/).
 
-- **When the reminder pops up**, you get two buttons:
-  - **I MOVED!** — confirms you got up, counts it for the day, and restarts the timer
-    for the next nudge.
-  - **Gimme X min** — snoozes for your chosen snooze time.
-- **Right-click the teal icon** for the menu:
-  - **Move now!** — pop a reminder this instant
-  - **Snooze** — delay the next one
-  - **Pause / Resume** — mute reminders for a while
-  - **Settings…** — change the timings (below)
-  - **Quit** — close the app
-- **Double-click the icon** = trigger a reminder right now.
+**To uninstall:** right-click the icon → Quit, then delete the folder.
 
-## Settings
+---
 
-Right-click the icon → **Settings…**:
+## 🍎 Mac
 
-- **Remind me every (minutes)** — default **45**
-- **Snooze for (minutes)** — default **5**
-- **Play a chime with alerts** — on/off
-- **Start automatically at login** — adds a Startup shortcut (no admin needed)
+A small **menu-bar app** — a teal dot up near the clock that nudges you on a timer.
 
-Your settings are remembered between runs (saved in a small `moveit-settings.json` file
-next to the app).
+**Getting it (about 2 minutes):**
 
-## Make it your own
+1. Go to the **[Releases page](../../releases/latest)** and download **MoveIt-Mac.zip**.
+2. Double-click the zip to unpack it, then drag **Move It** into your **Applications**
+   folder.
+3. **First time only:** macOS is cautious about apps that aren't from the App Store. If it
+   refuses to open, go to **System Settings → Privacy & Security**, scroll down, and click
+   **"Open Anyway"** next to the Move It message. You only do this once.
+4. Look for the small **teal dot** near the top-right of your screen. You're running.
 
-Open **`messages.txt`** in Notepad — it's the list of funky reminder lines, one per line.
-Add your own, delete ones you don't like, save. They're picked at random. Inside jokes
-strongly encouraged. (It ships with about 90 to get you started.)
+Works on any Mac from ~2020 onwards (Apple Silicon *and* Intel), macOS 13 or later.
 
-## If it won't start
+**Using it:** when the colourful nudge appears, click **I MOVED!** (counts it, restarts
+the timer) or **Gimme X min** (snooze). **Click the teal dot** for the menu — *Move now,
+Snooze, Pause/Resume, Settings…, Edit Messages…, Quit*. Settings let you change the
+interval (default 45 min), snooze time, chime, and **Start automatically at login**.
 
-Some very locked-down PCs block `.bat` files. If double-clicking `Start-MoveIt.bat` does
-nothing:
+**To uninstall:** click the dot → Quit, then drag **Move It** from Applications to the
+Trash.
 
-- **Try this instead:** right-click **`MoveIt.ps1` → Run with PowerShell**.
-- **Still blocked?** There's a backup version — just double-click **`MoveIt.hta`**. It
-  runs through `mshta.exe` (also built into Windows) and does the same job, except it's a
-  small **window** instead of a tray icon. Minimize it to tuck it away; when it's time to
-  move, it pops a big colourful alert and flashes in the taskbar. Same settings, same
-  `messages.txt`.
+---
 
-If PowerShell **and** mshta are both blocked by company policy (rare), there's no
-install-free way around that — it's an IT setting outside any app's control.
+## Make it your own (both versions)
+
+Move It ships with about 90 funky reminder lines, picked at random. You can edit them:
+
+- **Windows:** open `messages.txt` (in the folder) in Notepad — one message per line.
+- **Mac:** menu → **Edit Messages…**. It creates a `messages.txt` in
+  **Documents → Move It** and opens it; add your own, save, done.
+
+Inside jokes strongly encouraged.
 
 ## Common questions
 
-**Is anything sent over the internet?** No. Nothing. It's entirely offline — just files
-on your PC.
+**Is anything sent over the internet?** No. Nothing, on either platform. It's entirely
+offline.
 
-**Will it get me in trouble with IT?** It installs nothing and needs no admin rights, so
-there's nothing to "install" in the first place. But every workplace is different — if
-you're unsure, it's only a folder of text files you can show them.
+**Is it really free?** Yes — free and open source (MIT licence). The whole thing is
+readable in this repository.
 
-**Is it really free?** Yes — free and open source (MIT licence). The whole program is
-readable text in this repository.
-
-**How do I uninstall it?** Right-click the icon → **Quit**, then delete the folder. If you
-turned on "Start automatically at login", also remove the **Move It** shortcut from your
-Startup folder (press `Win + R`, type `shell:startup`, delete it there).
+**Windows vs Mac — are they the same app?** Same idea, two native builds. The Windows one
+is text files (PowerShell/HTA); the Mac one is a native menu-bar app. They don't need each
+other — grab whichever matches your computer.
 
 **Something's not working / I have an idea.** Open an issue on this page (the **Issues**
 tab).
 
 ---
 
-*For the technically inclined: how it works and how to tweak it are in
+*For the technically inclined: how each version works and how to build the Mac app are in
 [DEVELOPER.md](DEVELOPER.md).*

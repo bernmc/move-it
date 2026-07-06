@@ -1,5 +1,8 @@
-# Runtime settings written next to the app on the user's PC — not source.
+# Runtime settings written next to the Windows app on the user's PC — not source.
 moveit-settings.json
 moveit-settings.txt
+
+# Compiled macOS app bundle.
+build/
 
 .DS_Store

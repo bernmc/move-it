@@ -1,68 +1,78 @@
 # Move It! — developer notes
 
-A get-up-and-move desk reminder for Windows, built to run on a **locked-down PC with no
-installs and no admin rights**. Everything uses only what ships inside stock Windows —
-PowerShell + Windows Forms/.NET, or `mshta.exe`. User-facing instructions are in
-[README.md](README.md).
+One product, two native builds. User-facing instructions are in [README.md](README.md).
 
-There is **no build step**. The app *is* these text files — copy the folder to a Windows
-machine and run it.
+| Folder | Platform | What it is |
+|---|---|---|
+| [`windows/`](windows/) | Windows | Install-free PowerShell + HTA scripts |
+| [`macos/`](macos/) | macOS | Single-file Swift menu-bar app |
 
-## The two versions
+The two are independent — they share the *concept* and the funky `messages.txt` idea, but
+no code.
 
-Both are self-contained and share `messages.txt`. Ship whichever runs on the target PC —
-they don't depend on each other.
+---
+
+## Windows (`windows/`)
+
+Built to run on a **locked-down PC with no installs and no admin rights** — uses only
+what ships inside stock Windows. **No build step**: the app *is* these text files.
 
 | File | What it is |
 |---|---|
-| `MoveIt.ps1` | **Primary version.** PowerShell + Windows Forms tray app. Invisible until it nudges you. |
-| `Start-MoveIt.bat` | Launcher for the PowerShell version — runs it hidden, no console window, execution policy bypassed *per-process* (no system change). |
-| `MoveIt.hta` | **Backup version.** Runs via `mshta.exe` for when `.ps1`/`.bat` are blocked. A window rather than a tray icon. |
-| `messages.txt` | The random reminder lines, one per line. Shared by both versions. Edit freely. |
+| `MoveIt.ps1` | **Primary.** PowerShell + Windows Forms tray app. Invisible until it nudges you. |
+| `Start-MoveIt.bat` | Launcher — runs the `.ps1` hidden, execution policy bypassed *per-process* (no machine change, no admin). |
+| `MoveIt.hta` | **Backup** for when `.ps1`/`.bat` are blocked — runs via `mshta.exe` as a window. |
+| `messages.txt` | Random reminder lines, one per line. Shared by both Windows versions. |
+| `README.txt` | Plain-text instructions that ship inside the folder. |
 
-## How it runs
-
-- **`Start-MoveIt.bat`** calls:
+- `Start-MoveIt.bat` runs:
   `powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File MoveIt.ps1`.
-  The `Bypass` is scoped to that single process, so it needs no admin rights and changes
-  no machine policy.
-- **`MoveIt.ps1`** loads `System.Windows.Forms` + `System.Drawing`, draws a `NotifyIcon`
-  in the tray, and runs a timer that fires the funky full-window alert at the configured
-  interval. "I MOVED!" logs the daily count and restarts the cycle; "Gimme X" snoozes.
-- **`MoveIt.hta`** does the same job through the Trident/mshta engine as a small window,
-  since HTAs can't own a tray icon.
+- Defaults live in `Get-DefaultConfig` at the top of `MoveIt.ps1` (interval 45, snooze 5,
+  sound on, start-with-Windows off).
+- Runtime settings are written next to the app: `moveit-settings.json` (PowerShell) /
+  `moveit-settings.txt` (HTA). Both are **git-ignored** — per-user state, not source.
+- Start-with-Windows drops a shortcut into `shell:startup` — no registry/admin.
+- Quirks: chime needs a `.wav` in `C:\Windows\Media\` (else silent); emoji may render
+  monochrome under mshta; anti-focus-stealing may downgrade force-to-foreground to a
+  taskbar flash. If IT disables *both* PowerShell and mshta there's no install-free
+  workaround.
+- Developed on macOS, tested on Windows via Parallels. Nothing to compile — copy the
+  folder over and run.
 
-## Settings & data (generated at runtime, next to the app)
+---
 
-- PowerShell version → `moveit-settings.json`
-- HTA version → `moveit-settings.txt`
+## macOS (`macos/`)
 
-Both hold interval, snooze, sound on/off, start-with-Windows, and the daily move count +
-date. They're **git-ignored** — they're per-user runtime state, not source.
+A single-file native AppKit **menu-bar** app (no dependencies, no Xcode project).
 
-Defaults live at the top of `MoveIt.ps1` in `Get-DefaultConfig`:
+| File | Purpose |
+|---|---|
+| `main.swift` | entire app |
+| `Info.plist` | bundle metadata (`LSUIElement` hides the Dock icon) |
+| `build.sh` | compile + ad-hoc sign (+ install) |
 
-- `IntervalMinutes` — how often to nag (default **45**)
-- `SnoozeMinutes` — the "Gimme 5" delay (default **5**)
-- `Sound` — play a chime with the alert
-- `StartWithWindows` — add/remove a shortcut in the user's Startup folder (no admin)
+**Build:**
 
-## Start-with-Windows
+```sh
+./build.sh            # compile to build/Move It.app (universal arm64 + x86_64)
+./build.sh --install  # compile, copy to ~/Applications, relaunch
+```
 
-Handled purely in user space: a `Move It` shortcut is dropped into
-`shell:startup` (`%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`). No registry
-writes needing admin, no scheduled tasks.
+- A `NSStatusItem` (teal dot) owns a menu: *Move now, Snooze, Pause/Resume, Settings…,
+  Edit Messages…, About, Quit*. A one-shot `Timer` fires the nudge; "I MOVED!" logs the
+  daily count and reschedules, "Gimme X" reschedules at the snooze interval.
+- The nudge is a borderless floating `NudgeWindow` with a random vibrant background,
+  centred, brought forward with `NSApp.activate`. Chime via `NSSound(named: "Ping")`.
+- Settings persist in `UserDefaults`. Messages: read from
+  `~/Documents/Move It/messages.txt` if present (one per line, `#` comments ignored),
+  else the built-in list embedded in `main.swift`. **Edit Messages…** seeds that file and
+  opens it.
+- **Start at Login** uses `SMAppService.mainApp` (macOS 13+); on failure it points the
+  user to System Settings ▸ General ▸ Login Items.
 
-## Known Windows quirks
+**Build note:** `build.sh` pins `-target <arch>-apple-macos13.0` and lipos arm64 + x86_64
+into a universal binary — a beta Swift toolchain otherwise targets a newer macOS than the
+installed one and Launch Services refuses to open the app (error -10825). Min system
+macOS 13 (`SMAppService` requirement).
 
-- The chime uses a `.wav` from `C:\Windows\Media\`; if absent it fails silently.
-- Emoji may render monochrome under the older mshta/IE engine (cosmetic).
-- Windows' anti-focus-stealing behaviour can downgrade "force to foreground" into a
-  taskbar flash — expected, not a bug.
-- If IT policy disables **both** PowerShell and mshta, there is no install-free
-  workaround; that's outside the app's control.
-
-## Testing
-
-Developed on macOS, tested on Windows via Parallels. There's nothing to compile — edit a
-file, copy the folder over, run.
+To keep the embedded message list and Windows `messages.txt` in sync, edit both.
