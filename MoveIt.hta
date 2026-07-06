@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="x-ua-compatible" content="IE=edge">
+<title>Move It!</title>
+<HTA:APPLICATION
+    ID="MoveItApp"
+    APPLICATIONNAME="MoveIt"
+    BORDER="thin"
+    BORDERSTYLE="normal"
+    CAPTION="yes"
+    CONTEXTMENU="no"
+    INNERBORDER="no"
+    MAXIMIZEBUTTON="no"
+    MINIMIZEBUTTON="yes"
+    SCROLL="no"
+    SELECTION="no"
+    SHOWINTASKBAR="yes"
+    SINGLEINSTANCE="yes"
+    SYSMENU="yes" />
+<style>
+  html, body {
+    margin: 0; padding: 0; height: 100%; overflow: hidden;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    color: #fff; -ms-user-select: none;
+  }
+  body { background: #2b2d42; }
+
+  /* ---------- STATUS SCREEN ---------- */
+  #status {
+    height: 100%;
+    background: #00796b;
+    background: -ms-linear-gradient(135deg, #005a4f 0%, #00796b 100%);
+    text-align: center;
+  }
+  #status .title { font-size: 26px; font-weight: 600; padding-top: 22px; letter-spacing: 1px; }
+  #status .sub   { font-size: 13px; opacity: .85; margin-top: 4px; }
+  #countdown { font-size: 64px; font-weight: 700; margin: 18px 0 4px 0; font-variant-numeric: tabular-nums; }
+  #nextline  { font-size: 13px; opacity: .9; }
+  #stats     { font-size: 13px; opacity: .9; margin-top: 8px; }
+  #status .row { margin-top: 18px; }
+  .sbtn {
+    display: inline-block; margin: 5px; padding: 10px 16px; cursor: pointer;
+    background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.5);
+    border-radius: 8px; font-size: 14px; color: #fff;
+  }
+  .sbtn:hover { background: rgba(255,255,255,.30); }
+
+  /* ---------- ALERT SCREEN ---------- */
+  #alert { display: none; height: 100%; text-align: center; }
+  #emoji { font-size: 84px; margin: 18px 0 4px 0; font-family: "Segoe UI Emoji", "Segoe UI Symbol", sans-serif; }
+  #msg   { font-size: 20px; font-weight: 600; padding: 0 24px; min-height: 90px; }
+  #alert .row { margin-top: 14px; }
+  .abtn {
+    display: inline-block; margin: 6px; padding: 14px 22px; cursor: pointer;
+    border-radius: 10px; font-size: 16px; font-weight: 600; border: 2px solid #fff;
+  }
+  .moved  { background: #fff; color: #222; }
+  .snooze { background: transparent; color: #fff; }
+  .abtn:hover { opacity: .85; }
+
+  /* ---------- SETTINGS SCREEN ---------- */
+  #settings { display: none; height: 100%; background: #34354a; padding: 22px; box-sizing: border-box; }
+  #settings h2 { margin: 0 0 16px 0; font-weight: 600; }
+  #settings label { display: block; margin: 12px 0 4px 0; font-size: 14px; }
+  #settings input[type=number] { width: 80px; font-size: 14px; padding: 4px; }
+  #settings .chk { margin-top: 12px; font-size: 14px; }
+  #settings .tip { font-size: 12px; opacity: .7; margin-top: 16px; }
+  #settings .row { margin-top: 22px; }
+</style>
+</head>
+<body>
+
+<!-- ===================== STATUS ===================== -->
+<div id="status">
+  <div class="title">MOVE IT!</div>
+  <div class="sub">desk-escape reminder</div>
+  <div id="countdown">--:--</div>
+  <div id="nextline">until your next nudge</div>
+  <div id="stats">moves today: 0</div>
+  <div class="row">
+    <span class="sbtn" onclick="moveNow()">Move now</span>
+    <span class="sbtn" id="pauseBtn" onclick="togglePause()">Pause</span>
+    <span class="sbtn" onclick="showSettings()">Settings</span>
+  </div>
+</div>
+
+<!-- ===================== ALERT ===================== -->
+<div id="alert">
+  <div id="emoji"></div>
+  <div id="msg"></div>
+  <div class="row">
+    <span class="abtn moved"  onclick="confirmMoved()">I MOVED!</span>
+    <span class="abtn snooze" id="snoozeBtn" onclick="snooze()">Gimme 5</span>
+  </div>
+</div>
+
+<!-- ===================== SETTINGS ===================== -->
+<div id="settings">
+  <h2>Settings</h2>
+  <label>Remind me every (minutes):</label>
+  <input type="number" id="inInterval" min="1" max="600" value="45">
+  <label>Snooze for (minutes):</label>
+  <input type="number" id="inSnooze" min="1" max="120" value="5">
+  <div class="chk"><input type="checkbox" id="inSound" checked> Play a chime with each alert</div>
+  <div class="chk"><input type="checkbox" id="inStartup"> Start automatically when I log in</div>
+  <div class="tip">Tip: edit <b>messages.txt</b> (next to this app) to add your own funky reminders, one per line.</div>
+  <div class="row">
+    <span class="sbtn" onclick="saveSettings()">Save</span>
+    <span class="sbtn" onclick="showStatus()">Cancel</span>
+  </div>
+</div>
+
+<bgsound id="snd" loop="1">
+
+<script language="JScript">
+// =====================================================================
+//  MOVE IT!  -  HTA edition (single-file, no install)
+//  Runs on stock Windows via mshta.exe.
+// =====================================================================
+
+var fso = new ActiveXObject("Scripting.FileSystemObject");
+var sh  = new ActiveXObject("WScript.Shell");
+
+// ---- Work out the folder this .hta lives in -------------------------
+function appDir() {
+    var p = unescape(location.pathname);            // "/C:/path/MoveIt.hta"
+    if (p.charAt(0) == '/' || p.charAt(0) == '\\') p = p.substring(1);
+    p = p.replace(/\//g, '\\');
+    return fso.GetParentFolderName(p);
+}
+var DIR          = appDir();
+var CONFIG_PATH  = DIR + "\\moveit-settings.txt";
+var MESSAGE_PATH = DIR + "\\messages.txt";
+
+// ---- Tiny file helpers ----------------------------------------------
+function readFile(path) {
+    try {
+        if (!fso.FileExists(path)) return null;
+        var f = fso.OpenTextFile(path, 1, false);
+        var t = f.AtEndOfStream ? "" : f.ReadAll();
+        f.Close();
+        return t;
+    } catch (e) { return null; }
+}
+function writeFile(path, text) {
+    try { var f = fso.CreateTextFile(path, true); f.Write(text); f.Close(); } catch (e) {}
+}
+
+// ---- Config (simple key=value lines) --------------------------------
+var cfg = { interval: 45, snooze: 5, sound: 1, startup: 0, count: 0, date: "" };
+
+function todayStr() {
+    var d = new Date();
+    function pad(n){ return (n < 10 ? "0" : "") + n; }
+    return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate());
+}
+function loadConfig() {
+    var t = readFile(CONFIG_PATH);
+    if (t) {
+        var lines = t.split(/\r?\n/);
+        for (var i = 0; i < lines.length; i++) {
+            var eq = lines[i].indexOf("=");
+            if (eq > 0) {
+                var k = lines[i].substring(0, eq);
+                var v = lines[i].substring(eq + 1);
+                if (k == "date") { cfg.date = v; }
+                else if (cfg[k] !== undefined) { cfg[k] = parseInt(v, 10) || 0; }
+            }
+        }
+    }
+    if (cfg.date != todayStr()) { cfg.date = todayStr(); cfg.count = 0; }  // new day, reset count
+}
+function saveConfig() {
+    var t = "interval=" + cfg.interval + "\r\n" +
+            "snooze="   + cfg.snooze   + "\r\n" +
+            "sound="    + cfg.sound    + "\r\n" +
+            "startup="  + cfg.startup  + "\r\n" +
+            "count="    + cfg.count    + "\r\n" +
+            "date="     + cfg.date     + "\r\n";
+    writeFile(CONFIG_PATH, t);
+}
+
+// ---- Messages -------------------------------------------------------
+var builtinMessages = [
+    "I like to move it, move it! The lemurs demand it.",
+    "Up and at 'em, hot stuff! Your chair needs a break from you.",
+    "Beep boop. Human detected sitting too long. Initiate WIGGLE protocol.",
+    "Stretch like a cat. Judge everyone like one too.",
+    "Your spine just filed a formal complaint. Stand up!",
+    "Shake your tail feather!",
+    "Time to boogie! No one's watching. Probably.",
+    "Hydrate AND perambulate. Double combo!",
+    "Do a little dance, make a little... lap of the office.",
+    "Your future self thanks you for moving RIGHT NOW.",
+    "Get those legs jiggling, you magnificent desk creature.",
+    "Pretend the floor is lava in 3... 2... 1...",
+    "Reach for the stars! Or at least the ceiling.",
+    "Stand up and feel superior to all the still-sitting people.",
+    "Wiggle break! It's the law. (My law.)",
+    "Move it or lose it, buttercup.",
+    "Channel your inner flamingo. Stand on one leg.",
+    "The water cooler misses you. Go gossip.",
+    "Booty shakes burn calories. Science! (probably)",
+    "Roll those shoulders back, your majesty."
+];
+var praiseMessages = [
+    "Look at you GO!", "Certified Mover. Gold star.",
+    "Boom. Movement banked.", "The lemurs are proud.",
+    "Smooth moves. Truly.", "That's how it's done!"
+];
+function getMessages() {
+    var t = readFile(MESSAGE_PATH);
+    if (t) {
+        var raw = t.split(/\r?\n/);
+        var out = [];
+        for (var i = 0; i < raw.length; i++) {
+            var s = raw[i].replace(/^\s+|\s+$/g, "");
+            if (s.length) out.push(s);
+        }
+        if (out.length) return out;
+    }
+    return builtinMessages;
+}
+
+var emojis   = ["🦎","💃","🦕","🦩","💪","🏃","🎆"];
+// Deep/saturated on purpose: white text & emoji stay readable across the whole gradient.
+var palettes = [["#c5225c","#9e1a4a"],["#3f37c9","#2f2a99"],["#00796b","#005a4f"],
+                ["#c6571e","#9e4517"],["#6a3dc4","#502d96"],["#ab274f","#85203e"]];
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// ---- Timer state ----------------------------------------------------
+var remaining = 0;     // seconds until next nudge
+var paused    = false;
+var alerting  = false;
+var ticker    = null;
+var flashTimer = null;
+
+function pad2(n){ return (n < 10 ? "0" : "") + n; }
+function fmt(sec) {
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return pad2(m) + ":" + pad2(s);
+}
+
+function startCycle(minutes) {
+    remaining = Math.round(minutes * 60);
+    paused = false;
+    document.getElementById("pauseBtn").innerHTML = "Pause";
+}
+
+function tick() {
+    if (paused || alerting) return;
+    remaining--;
+    if (remaining <= 0) { fireAlert(); return; }
+    document.getElementById("countdown").innerHTML = fmt(remaining);
+}
+
+// ---- Screens --------------------------------------------------------
+function show(id) {
+    document.getElementById("status").style.display   = (id == "status")   ? "block" : "none";
+    document.getElementById("alert").style.display    = (id == "alert")    ? "block" : "none";
+    document.getElementById("settings").style.display = (id == "settings") ? "block" : "none";
+}
+function showStatus()   { show("status"); refreshStatus(); }
+function showSettings() {
+    document.getElementById("inInterval").value = cfg.interval;
+    document.getElementById("inSnooze").value   = cfg.snooze;
+    document.getElementById("inSound").checked   = (cfg.sound == 1);
+    document.getElementById("inStartup").checked = (cfg.startup == 1);
+    show("settings");
+}
+function refreshStatus() {
+    document.getElementById("countdown").innerHTML = fmt(remaining > 0 ? remaining : 0);
+    document.getElementById("stats").innerHTML = "moves today: " + cfg.count;
+    document.getElementById("snoozeBtn").innerHTML = "Gimme " + cfg.snooze;
+}
+
+// ---- Alert ----------------------------------------------------------
+function playChime() {
+    if (cfg.sound != 1) return;
+    try {
+        var wav = "C:\\Windows\\Media\\Windows Notify.wav";
+        if (!fso.FileExists(wav)) wav = "C:\\Windows\\Media\\notify.wav";
+        if (!fso.FileExists(wav)) wav = "C:\\Windows\\Media\\chimes.wav";
+        if (fso.FileExists(wav)) {
+            var s = document.getElementById("snd");
+            s.src = ""; s.src = wav;   // re-trigger
+        }
+    } catch (e) {}
+}
+
+function flashCaption() {
+    var on = true, n = 0;
+    if (flashTimer) window.clearInterval(flashTimer);
+    flashTimer = window.setInterval(function () {
+        document.title = on ? "*** MOVE IT! ***" : "Move It!";
+        on = !on; n++;
+        if (n > 8) { window.clearInterval(flashTimer); document.title = "Move It!"; }
+    }, 400);
+}
+
+function fireAlert() {
+    alerting = true;
+    var grad = pick(palettes);
+    var a = document.getElementById("alert");
+    a.style.background = grad[0];
+    a.style.background = "-ms-linear-gradient(135deg, " + grad[0] + " 0%, " + grad[1] + " 100%)";
+    document.getElementById("emoji").innerHTML = pick(emojis);
+    document.getElementById("msg").innerHTML   = pick(getMessages());
+    document.getElementById("snoozeBtn").innerHTML = "Gimme " + cfg.snooze;
+    show("alert");
+    try { window.focus(); } catch (e) {}
+    flashCaption();
+    playChime();
+}
+
+function confirmMoved() {
+    cfg.count++;
+    cfg.date = todayStr();
+    saveConfig();
+    alerting = false;
+    startCycle(cfg.interval);     // auto-restart the cycle
+    showStatus();
+    // quick praise flash in the countdown line
+    var nl = document.getElementById("nextline");
+    var original = "until your next nudge";
+    nl.innerHTML = pick(praiseMessages);
+    window.setTimeout(function () { nl.innerHTML = original; }, 2500);
+}
+
+function snooze() {
+    alerting = false;
+    startCycle(cfg.snooze);       // gimme X minutes
+    showStatus();
+}
+
+function moveNow() { if (!alerting) fireAlert(); }
+
+function togglePause() {
+    paused = !paused;
+    document.getElementById("pauseBtn").innerHTML = paused ? "Resume" : "Pause";
+}
+
+// ---- Start-with-Windows shortcut ------------------------------------
+function setStartup(enable) {
+    try {
+        var startupDir = sh.SpecialFolders("Startup");
+        var lnkPath = startupDir + "\\Move It.lnk";
+        if (enable) {
+            var lnk = sh.CreateShortcut(lnkPath);
+            lnk.TargetPath = "mshta.exe";
+            var p = unescape(location.pathname);
+            if (p.charAt(0) == '/' || p.charAt(0) == '\\') p = p.substring(1);
+            p = p.replace(/\//g, '\\');
+            lnk.Arguments = '"' + p + '"';
+            lnk.WorkingDirectory = DIR;
+            lnk.Description = "Move It - movement reminder";
+            lnk.Save();
+        } else {
+            if (fso.FileExists(lnkPath)) fso.DeleteFile(lnkPath);
+        }
+    } catch (e) {}
+}
+
+function saveSettings() {
+    var iv = parseInt(document.getElementById("inInterval").value, 10);
+    var sn = parseInt(document.getElementById("inSnooze").value, 10);
+    cfg.interval = (iv > 0) ? iv : 45;
+    cfg.snooze   = (sn > 0) ? sn : 5;
+    cfg.sound    = document.getElementById("inSound").checked ? 1 : 0;
+    cfg.startup  = document.getElementById("inStartup").checked ? 1 : 0;
+    saveConfig();
+    setStartup(cfg.startup == 1);
+    startCycle(cfg.interval);
+    showStatus();
+}
+
+// ---- Boot -----------------------------------------------------------
+function boot() {
+    try {
+        window.resizeTo(440, 420);
+        window.moveTo(Math.max(0, (screen.availWidth - 440) / 2),
+                      Math.max(0, (screen.availHeight - 420) / 3));
+    } catch (e) {}
+    loadConfig();
+    startCycle(cfg.interval);
+    showStatus();
+    ticker = window.setInterval(tick, 1000);
+}
+window.onload = boot;
+</script>
+</body>
+</html>

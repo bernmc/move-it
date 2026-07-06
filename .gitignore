@@ -1,0 +1,5 @@
+# Runtime settings written next to the app on the user's PC — not source.
+moveit-settings.json
+moveit-settings.txt
+
+.DS_Store
