@@ -13,13 +13,13 @@ your computer.
 
 There are two versions. **Pick yours below.**
 
-- 🪟 **[Windows](#-windows)** — installs *nothing at all*, so it even runs on a
+- **[Windows](#windows)** — installs *nothing at all*, so it even runs on a
   locked-down work PC with no admin rights.
-- 🍎 **[Mac](#-mac)** — a little menu-bar app.
+- **[Mac](#mac)** — a little menu-bar app.
 
 ---
 
-## 🪟 Windows
+## Windows
 
 Runs on 100% stock Windows — no installer, no admin rights, no Python/Java/anything. It's
 just a few text files that use the PowerShell and .NET already built into Windows.
@@ -50,7 +50,7 @@ runs as a small window). Full details are in the `README.txt` inside the folder 
 
 ---
 
-## 🍎 Mac
+## Mac
 
 A small **menu-bar app** — a teal dot up near the clock that nudges you on a timer.
 
