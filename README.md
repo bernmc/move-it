@@ -13,9 +13,9 @@ your computer.
 
 There are two versions. **Pick yours below.**
 
-- **[Windows](#windows)** — installs *nothing at all*, so it even runs on a
+- <img src="docs/icon-windows.png" alt="" height="20" align="absmiddle"> &nbsp;**[Windows](#windows)** — installs *nothing at all*, so it even runs on a
   locked-down work PC with no admin rights.
-- **[Mac](#mac)** — a little menu-bar app.
+- <img src="docs/icon-mac.png" alt="" height="20" align="absmiddle"> &nbsp;**[Mac](#mac)** — a little menu-bar app.
 
 ---
 
@@ -30,8 +30,9 @@ just a few text files that use the PowerShell and .NET already built into Window
 2. **Right-click the zip → Extract All…**, and put the `MoveIt` folder anywhere — your
    **Documents** or **Desktop** is perfect.
 3. Open the folder and **double-click `Start-MoveIt.bat`**.
-4. A little **teal icon with a running figure** appears down near the clock. That's it
-   running! Can't see it? Click the small **^** arrow by the clock to reveal hidden icons.
+4. A little **teal icon with a running figure** <img src="docs/icon-windows.png" alt="" height="16" align="absmiddle"> appears down near the clock.
+   That's it running! Can't see it? Click the small **^** arrow by the clock to reveal
+   hidden icons.
 
 > If Windows shows a blue **"Windows protected your PC"** box, that's normal for anything
 > not from the Microsoft Store — click **More info → Run anyway** (once).
@@ -63,8 +64,8 @@ you on a timer (it matches your menu bar's light or dark style).
 3. **First time only:** macOS is cautious about apps that aren't from the App Store. If it
    refuses to open, go to **System Settings → Privacy & Security**, scroll down, and click
    **"Open Anyway"** next to the Move It message. You only do this once.
-4. Look for the small **running-figure icon** near the top-right of your screen. You're
-   running.
+4. Look for the small **running-figure icon** <img src="docs/icon-mac.png" alt="" height="16" align="absmiddle"> near the top-right of your screen.
+   You're running.
 
 Works on any Mac from ~2020 onwards (Apple Silicon *and* Intel), macOS 13 or later.
 
