@@ -30,14 +30,14 @@ just a few text files that use the PowerShell and .NET already built into Window
 2. **Right-click the zip → Extract All…**, and put the `MoveIt` folder anywhere — your
    **Documents** or **Desktop** is perfect.
 3. Open the folder and **double-click `Start-MoveIt.bat`**.
-4. A little **teal circle** appears down near the clock. That's it running! Can't see it?
-   Click the small **^** arrow by the clock to reveal hidden icons.
+4. A little **teal icon with a running figure** appears down near the clock. That's it
+   running! Can't see it? Click the small **^** arrow by the clock to reveal hidden icons.
 
 > If Windows shows a blue **"Windows protected your PC"** box, that's normal for anything
 > not from the Microsoft Store — click **More info → Run anyway** (once).
 
 **Using it:** when the reminder pops up, click **I MOVED!** (counts it, restarts the
-timer) or **Gimme X min** (snooze). **Right-click the teal icon** for the menu — *Move
+timer) or **Gimme X min** (snooze). **Right-click the icon** for the menu — *Move
 now, Snooze, Pause/Resume, Settings, Quit*. Settings let you change the interval (default
 45 min), snooze time, chime, and start-at-login.
 
@@ -52,7 +52,8 @@ runs as a small window). Full details are in the `README.txt` inside the folder 
 
 ## Mac
 
-A small **menu-bar app** — a teal dot up near the clock that nudges you on a timer.
+A small **menu-bar app** — a little **running-figure icon** up near the clock that nudges
+you on a timer (it matches your menu bar's light or dark style).
 
 **Getting it (about 2 minutes):**
 
@@ -62,16 +63,17 @@ A small **menu-bar app** — a teal dot up near the clock that nudges you on a t
 3. **First time only:** macOS is cautious about apps that aren't from the App Store. If it
    refuses to open, go to **System Settings → Privacy & Security**, scroll down, and click
    **"Open Anyway"** next to the Move It message. You only do this once.
-4. Look for the small **teal dot** near the top-right of your screen. You're running.
+4. Look for the small **running-figure icon** near the top-right of your screen. You're
+   running.
 
 Works on any Mac from ~2020 onwards (Apple Silicon *and* Intel), macOS 13 or later.
 
 **Using it:** when the colourful nudge appears, click **I MOVED!** (counts it, restarts
-the timer) or **Gimme X min** (snooze). **Click the teal dot** for the menu — *Move now,
+the timer) or **Gimme X min** (snooze). **Click the icon** for the menu — *Move now,
 Snooze, Pause/Resume, Settings…, Edit Messages…, Quit*. Settings let you change the
 interval (default 45 min), snooze time, chime, and **Start automatically at login**.
 
-**To uninstall:** click the dot → Quit, then drag **Move It** from Applications to the
+**To uninstall:** click the icon → Quit, then drag **Move It** from Applications to the
 Trash.
 
 ---

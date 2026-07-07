@@ -128,21 +128,33 @@ $Palette = @(
 )
 
 # ----------------------------------------------------------------------
-#  TRAY ICON  (drawn on the fly - a bright "go" circle)
+#  TRAY ICON  (drawn on the fly - a bright teal disc with a running figure)
 # ----------------------------------------------------------------------
 function New-TrayIcon {
     $bmp = New-Object System.Drawing.Bitmap 32,32
     $g   = [System.Drawing.Graphics]::FromImage($bmp)
     $g.SmoothingMode = 'AntiAlias'
+    $g.TextRenderingHint = 'AntiAliasGridFit'
     $g.Clear([System.Drawing.Color]::Transparent)
     $fill = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255,0,191,165))
     $g.FillEllipse($fill, 1, 1, 30, 30)
-    # white "play / go" triangle in the middle
-    $tri = [System.Drawing.Point[]]@(
-        (New-Object System.Drawing.Point 12,9),
-        (New-Object System.Drawing.Point 24,16),
-        (New-Object System.Drawing.Point 12,23))
-    $g.FillPolygon([System.Drawing.Brushes]::White, $tri)
+    # white running figure in the middle (Segoe UI Emoji ships with Windows).
+    # Falls back to a white "go" triangle if the glyph can't be drawn.
+    try {
+        $runner = [char]::ConvertFromUtf32(0x1F3C3)   # 🏃 running person
+        $font   = New-Object System.Drawing.Font('Segoe UI Emoji', 19, [System.Drawing.GraphicsUnit]::Pixel)
+        $sf     = New-Object System.Drawing.StringFormat
+        $sf.Alignment = 'Center'; $sf.LineAlignment = 'Center'
+        $rect   = New-Object System.Drawing.RectangleF 1, 1, 31, 30
+        $g.DrawString($runner, $font, [System.Drawing.Brushes]::White, $rect, $sf)
+        $font.Dispose(); $sf.Dispose()
+    } catch {
+        $tri = [System.Drawing.Point[]]@(
+            (New-Object System.Drawing.Point 12,9),
+            (New-Object System.Drawing.Point 24,16),
+            (New-Object System.Drawing.Point 12,23))
+        $g.FillPolygon([System.Drawing.Brushes]::White, $tri)
+    }
     $g.Dispose()
     return [System.Drawing.Icon]::FromHandle($bmp.GetHicon())
 }
