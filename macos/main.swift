@@ -218,6 +218,8 @@ final class NudgeWindow: NSWindow {
                    backing: .buffered, defer: false)
 
         isOpaque = false
+        backgroundColor = .clear          // transparent corners around the rounded card
+        isReleasedWhenClosed = false      // we manage lifetime via the owning property
         level = .floating
         hasShadow = true
         isMovableByWindowBackground = true
@@ -260,28 +262,89 @@ final class NudgeWindow: NSWindow {
         msg.frame = NSRect(x: 34, y: 96, width: size.width - 68, height: 110)
         root.addSubview(msg)
 
-        // Buttons
-        let moved = NSButton(title: "I MOVED! 🎉", target: self, action: #selector(movedTapped))
-        moved.bezelStyle = .rounded
-        moved.controlSize = .large
-        moved.font = .systemFont(ofSize: 16, weight: .bold)
-        moved.keyEquivalent = "\r"                    // Return activates it
-        moved.frame = NSRect(x: 90, y: 32, width: 200, height: 44)
+        // Buttons — bold, solid, high-contrast pills that read on any background colour.
+        let moved = pill(title: "I MOVED!  🎉",
+                         fill: .white,
+                         text: NSColor(white: 0.10, alpha: 1),
+                         action: #selector(movedTapped))
+        moved.keyEquivalent = "\r"                     // Return activates it
+        moved.frame = NSRect(x: 76, y: 34, width: 224, height: 50)
         root.addSubview(moved)
 
-        let snooze = NSButton(title: "Gimme \(snoozeMinutes) min",
-                              target: self, action: #selector(snoozeTapped))
-        snooze.bezelStyle = .rounded
-        snooze.controlSize = .large
-        snooze.font = .systemFont(ofSize: 16, weight: .medium)
-        snooze.frame = NSRect(x: 300, y: 32, width: 170, height: 44)
+        let snooze = pill(title: "Gimme \(snoozeMinutes) min",
+                          fill: NSColor(white: 0, alpha: 0.30),
+                          text: .white,
+                          action: #selector(snoozeTapped))
+        snooze.frame = NSRect(x: 312, y: 34, width: 172, height: 50)
         root.addSubview(snooze)
 
         center()
     }
 
-    @objc private func movedTapped() { close(); onMoved() }
-    @objc private func snoozeTapped() { close(); onSnooze() }
+    /// A borderless, solid-fill rounded "pill" button with a bold coloured title.
+    private func pill(title: String, fill: NSColor, text: NSColor, action: Selector) -> NSButton {
+        let b = NSButton(title: "", target: self, action: action)
+        b.isBordered = false
+        b.wantsLayer = true
+        b.layer?.backgroundColor = fill.cgColor
+        b.layer?.cornerRadius = 25
+        b.attributedTitle = NSAttributedString(string: title, attributes: [
+            .foregroundColor: text,
+            .font: NSFont.systemFont(ofSize: 17, weight: .heavy),
+        ])
+        return b
+    }
+
+    // Hide immediately, then run the callback on the next tick so we're not
+    // tearing this window (and its button) down while its click is still firing.
+    @objc private func movedTapped()  { let cb = onMoved;  orderOut(nil); DispatchQueue.main.async(execute: cb) }
+    @objc private func snoozeTapped() { let cb = onSnooze; orderOut(nil); DispatchQueue.main.async(execute: cb) }
+}
+
+// MARK: - The "well done!" toast -------------------------------------
+//  A small self-dismissing confirmation that slides in near the menu bar
+//  after you move — the Mac echo of the Windows tray balloon.
+
+final class ToastWindow: NSWindow {
+    init(title: String, body: String) {
+        let size = NSSize(width: 400, height: 128)
+        super.init(contentRect: NSRect(origin: .zero, size: size),
+                   styleMask: [.borderless], backing: .buffered, defer: false)
+        isOpaque = false
+        backgroundColor = .clear
+        isReleasedWhenClosed = false      // we manage lifetime via the owning property
+        level = .floating
+        hasShadow = true
+        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
+
+        let root = NSView(frame: NSRect(origin: .zero, size: size))
+        root.wantsLayer = true
+        // A cheerful green — white text stays legible (same principle as the nudge).
+        root.layer?.backgroundColor =
+            NSColor(calibratedHue: 0.36, saturation: 0.72, brightness: 0.60, alpha: 1).cgColor
+        root.layer?.cornerRadius = 20
+        contentView = root
+
+        let t = NSTextField(labelWithString: title)
+        t.font = .systemFont(ofSize: 21, weight: .heavy)
+        t.textColor = .white
+        t.frame = NSRect(x: 22, y: size.height - 48, width: size.width - 44, height: 30)
+        root.addSubview(t)
+
+        let b = NSTextField(wrappingLabelWithString: body)
+        b.font = .systemFont(ofSize: 15, weight: .semibold)
+        b.textColor = .white
+        b.isEditable = false; b.isSelectable = false
+        b.drawsBackground = false; b.isBezeled = false
+        b.frame = NSRect(x: 22, y: 16, width: size.width - 44, height: 58)
+        root.addSubview(b)
+
+        // Tuck into the top-right, just under the menu bar (visibleFrame excludes it).
+        if let screen = NSScreen.main {
+            let vf = screen.visibleFrame
+            setFrameOrigin(NSPoint(x: vf.maxX - size.width - 16, y: vf.maxY - size.height - 16))
+        }
+    }
 }
 
 // MARK: - App --------------------------------------------------------
@@ -299,13 +362,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ note: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem.button?.image = tealDot()
-        statusItem.button?.image?.isTemplate = false
+        statusItem.button?.image = menuBarIcon()
         buildMenu()
         scheduleNext(minutes: cfg.intervalMinutes)
     }
 
-    // A small teal dot for the menu bar.
+    // A running figure for the menu bar — a template symbol so it adapts to the
+    // light/dark menu bar automatically. Falls back to a teal dot on old systems.
+    private func menuBarIcon() -> NSImage {
+        let cfg = NSImage.SymbolConfiguration(pointSize: 15, weight: .semibold)
+        if let runner = NSImage(systemSymbolName: "figure.run", accessibilityDescription: "Move It")?
+            .withSymbolConfiguration(cfg) {
+            runner.isTemplate = true
+            return runner
+        }
+        let dot = tealDot()
+        dot.isTemplate = false
+        return dot
+    }
+
+    // A small teal dot for the menu bar (fallback only).
     private func tealDot() -> NSImage {
         let d: CGFloat = 16
         let img = NSImage(size: NSSize(width: d, height: d))
@@ -365,6 +441,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onMoved: { [weak self] in
                 guard let self = self else { return }
                 self.cfg.logMove()
+                self.showToast()
                 self.nudge = nil
                 self.scheduleNext(minutes: self.cfg.intervalMinutes)
             },
@@ -376,6 +453,50 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         nudge = w
         NSApp.activate(ignoringOtherApps: true)
         w.makeKeyAndOrderFront(nil)
+    }
+
+    // MARK: The "well done!" toast
+
+    private var toast: ToastWindow?
+    private var toastTimer: Timer?
+
+    private static let praise = [
+        "King Julian would be proud. 👑",
+        "Look at you GO!",
+        "Certified Mover. Gold star. ⭐️",
+        "The lemurs are proud.",
+        "Boom. Movement banked.",
+        "Smooth moves. Truly.",
+        "That's how it's done!",
+        "Your hips don't lie, and neither does your step count.",
+    ]
+
+    private func showToast() {
+        let n = cfg.moveCount
+        let line = Self.praise.randomElement() ?? "Nice one!"
+        let w = ToastWindow(title: "Well done! 🎉", body: "\(line)\nMoves today: \(n)")
+
+        toast?.close()
+        toast = w
+        w.alphaValue = 0
+        w.orderFrontRegardless()          // show without stealing focus
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.2
+            w.animator().alphaValue = 1
+        }
+
+        // Auto-dismiss after ~2.8s (matches the Windows balloon), fading out.
+        toastTimer?.invalidate()
+        toastTimer = Timer.scheduledTimer(withTimeInterval: 2.8, repeats: false) { [weak self] _ in
+            guard let self = self, let win = self.toast else { return }
+            NSAnimationContext.runAnimationGroup({ ctx in
+                ctx.duration = 0.35
+                win.animator().alphaValue = 0
+            }, completionHandler: {
+                win.close()
+                self.toast = nil
+            })
+        }
     }
 
     // MARK: Menu actions

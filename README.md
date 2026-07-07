@@ -7,6 +7,10 @@ funky reminder to stand up and stretch. You click **I MOVED!**, it counts it, an
 cycle starts again. No accounts, no subscriptions, no internet — your data never leaves
 your computer.
 
+<p align="center">
+  <img src="docs/screenshot.png" alt="Move It! nudge window: a big 'MOVE IT!' heading, a funky reminder message, and 'I MOVED!' and 'Gimme 5 min' buttons" width="620">
+</p>
+
 There are two versions. **Pick yours below.**
 
 - 🪟 **[Windows](#-windows)** — installs *nothing at all*, so it even runs on a
